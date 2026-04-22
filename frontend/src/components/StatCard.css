@@ -1,0 +1,30 @@
+.stat-card {
+  height: 100%;
+}
+
+.stat-card-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.stat-title {
+  font-size: 0.875rem;
+  color: var(--text-light);
+  margin-bottom: var(--spacing-1);
+}
+
+.stat-value {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--text-dark);
+}
+
+.stat-icon-wrapper {
+  background-color: var(--bg-color);
+  padding: 12px;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+}
+
+/* Add custom color classes if needed, e.g. .text-secondary */
