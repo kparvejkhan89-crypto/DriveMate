@@ -362,6 +362,7 @@ exports.addExpense = async (req, res) => {
 // --- DASHBOARD STATS ---
 exports.getStats = async (req, res) => {
     try {
+        console.log(`Fetching stats for user ID: ${req.user.id}, Role: ${req.user.role}`);
         if (req.user.role === 'user') {
             const [vehicles] = await pool.execute('SELECT COUNT(*) as count FROM vehicles WHERE user_id = ?', [req.user.id]);
             const [bookings] = await pool.execute('SELECT COUNT(*) as count FROM bookings WHERE user_id = ?', [req.user.id]);
@@ -374,12 +375,17 @@ exports.getStats = async (req, res) => {
             });
         } else {
             const [myCenter] = await pool.execute('SELECT id FROM service_centers WHERE user_id = ?', [req.user.id]);
+            console.log(`Found center for provider: ${JSON.stringify(myCenter)}`);
+            
             if (myCenter.length === 0) return res.json({ bookingsCount: 0, pendingCount: 0, totalEarnings: 0 });
             
             const centerId = myCenter[0].id;
             const [bookings] = await pool.execute('SELECT COUNT(*) as count FROM bookings WHERE center_id = ?', [centerId]);
             const [pending] = await pool.execute('SELECT COUNT(*) as count FROM bookings WHERE center_id = ? AND status = "pending"', [centerId]);
             const [earnings] = await pool.execute('SELECT SUM(cost) as total FROM bookings WHERE center_id = ? AND status = "completed"', [centerId]);
+            
+            console.log(`Stats calculated: Bookings=${bookings[0].count}, Pending=${pending[0].count}, Earnings=${earnings[0].total}`);
+            
             res.json({
                 bookingsCount: bookings[0].count,
                 pendingCount: pending[0].count,
@@ -387,7 +393,8 @@ exports.getStats = async (req, res) => {
             });
         }
     } catch (err) {
-        console.error(err); res.status(500).json({ error: 'Server error' });
+        console.error('Error in getStats:', err); 
+        res.status(500).json({ error: 'Server error: ' + err.message });
     }
 };
 
