@@ -40,7 +40,7 @@ exports.signup = async (req, res) => {
 
 exports.login = async (req, res) => {
     try {
-        const { email, password } = req.body;
+        const { email, password, requiredRole } = req.body;
         
         const [users] = await pool.execute('SELECT * FROM users WHERE email = ?', [email]);
         if (users.length === 0) {
@@ -48,6 +48,12 @@ exports.login = async (req, res) => {
         }
 
         const user = users[0];
+
+        // Check role if required
+        if (requiredRole && user.role !== requiredRole) {
+            return res.status(403).json({ error: `This account is not registered as a ${requiredRole}.` });
+        }
+
         const match = await bcrypt.compare(password, user.password);
         if (!match) {
             return res.status(400).json({ error: 'Invalid credentials' });
@@ -64,6 +70,7 @@ exports.login = async (req, res) => {
         res.status(500).json({ error: 'Server error' });
     }
 };
+
 
 exports.updateProfile = async (req, res) => {
     try {

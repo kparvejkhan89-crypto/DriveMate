@@ -14,8 +14,10 @@ export default function Landing() {
           <span className="brand-name">DriveMate</span>
         </div>
         <div className="nav-links">
-          <Link to="/login" className="nav-login">Login</Link>
+          <Link to="/login" className="nav-login">User Login</Link>
+          <Link to="/login-provider" className="nav-login">Provider Login</Link>
           <Link to="/signup?role=user">
+
             <Button size="md" className="nav-cta">Get Started</Button>
           </Link>
         </div>

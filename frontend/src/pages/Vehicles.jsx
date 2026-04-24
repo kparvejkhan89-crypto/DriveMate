@@ -5,6 +5,8 @@ import Button from '../components/Button';
 import Input from '../components/Input';
 import Spinner from '../components/Spinner';
 import Alert from '../components/Alert';
+import { API_BASE_URL } from '../api/config';
+
 import { Car } from 'lucide-react';
 
 export default function Vehicles() {
@@ -22,7 +24,7 @@ export default function Vehicles() {
 
   const fetchVehicles = async () => {
     try {
-      const response = await fetch('http://localhost:5000/api/vehicles', {
+      const response = await fetch(`${API_BASE_URL}/api/vehicles`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (!response.ok) throw new Error('Failed to fetch vehicles');
@@ -48,7 +50,7 @@ export default function Vehicles() {
     }
     
     try {
-      const response = await fetch('http://localhost:5000/api/vehicles', {
+      const response = await fetch(`${API_BASE_URL}/api/vehicles`, {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',

@@ -1,6 +1,6 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, Car, Wrench, IndianRupee, Calendar, FileText, Settings } from 'lucide-react';
+import { LayoutDashboard, Car, Wrench, IndianRupee, Calendar, FileText, Settings, Shield } from 'lucide-react';
 import { useAppContext } from '../context/AppContext';
 import './Sidebar.css';
 
@@ -11,7 +11,6 @@ export default function Sidebar() {
     { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { to: '/vehicles', label: 'My Vehicles', icon: Car },
     { to: '/services', label: 'Services', icon: Wrench },
-    { to: '/expenses', label: 'Expenses', icon: IndianRupee },
     { to: '/reminders', label: 'Reminders', icon: Calendar },
     { to: '/documents', label: 'Documents', icon: FileText },
     { to: '/profile', label: 'Profile', icon: Settings },
@@ -24,7 +23,10 @@ export default function Sidebar() {
     { to: '/provider-profile', label: 'Profile', icon: Settings },
   ];
 
-  const links = user?.role === 'provider' ? providerLinks : userLinks;
+  let links = userLinks;
+  if (user?.role === 'provider') links = providerLinks;
+
+
 
   return (
     <aside className="sidebar">

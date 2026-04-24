@@ -5,6 +5,8 @@ import Button from '../components/Button';
 import Input from '../components/Input';
 import Spinner from '../components/Spinner';
 import Alert from '../components/Alert';
+import { API_BASE_URL } from '../api/config';
+
 import { Calendar, MapPin, Wrench } from 'lucide-react';
 import { MapContainer, TileLayer, Marker } from 'react-leaflet';
 import L from 'leaflet';
@@ -46,8 +48,8 @@ export default function Services() {
   const fetchData = async () => {
     try {
       const [resCenters, resBookings] = await Promise.all([
-        fetch('http://localhost:5000/api/service-centers', { headers: { 'Authorization': `Bearer ${token}` } }),
-        fetch('http://localhost:5000/api/bookings', { headers: { 'Authorization': `Bearer ${token}` } })
+        fetch(`${API_BASE_URL}/api/service-centers`, { headers: { 'Authorization': `Bearer ${token}` } }),
+        fetch(`${API_BASE_URL}/api/bookings`, { headers: { 'Authorization': `Bearer ${token}` } })
       ]);
       
       if (!resCenters.ok || !resBookings.ok) throw new Error('Failed to fetch data');
@@ -69,7 +71,7 @@ export default function Services() {
 
   useEffect(() => {
     if (selectedCenter) {
-      fetch(`http://localhost:5000/api/service-centers/${selectedCenter}/services`, {
+      fetch(`${API_BASE_URL}/api/service-centers/${selectedCenter}/services`, {
         headers: { 'Authorization': `Bearer ${token}` }
       })
       .then(res => res.json())
@@ -89,7 +91,7 @@ export default function Services() {
     }
     
     try {
-      const response = await fetch('http://localhost:5000/api/bookings', {
+      const response = await fetch(`${API_BASE_URL}/api/bookings`, {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
@@ -110,7 +112,7 @@ export default function Services() {
   const handleCancelBooking = async (id) => {
     if (!window.confirm('Are you sure you want to cancel this booking?')) return;
     try {
-      const response = await fetch(`http://localhost:5000/api/bookings/${id}`, {
+      const response = await fetch(`${API_BASE_URL}/api/bookings/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         body: JSON.stringify({ status: 'cancelled' })
@@ -145,7 +147,7 @@ export default function Services() {
        return;
     }
     try {
-      const response = await fetch(`http://localhost:5000/api/bookings/${id}/rate`, {
+      const response = await fetch(`${API_BASE_URL}/api/bookings/${id}/rate`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         body: JSON.stringify({ ratingScore: parseInt(ratingScore) })
@@ -261,7 +263,7 @@ export default function Services() {
                  <select className="input-field" value={serviceType} onChange={e => setServiceType(e.target.value)}>
                    <option value="">{centerServices.length > 0 ? 'Select a Service' : 'No services offered by this garage'}</option>
                    {centerServices.map(s => (
-                      <option key={s.id} value={s.name}>{s.name} - ₹{s.price}</option>
+                      <option key={s.id} value={s.name}>{s.name}</option>
                    ))}
                  </select>
                </div>

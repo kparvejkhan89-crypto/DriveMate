@@ -20,6 +20,9 @@ import Reminders from './pages/Reminders';
 import Documents from './pages/Documents';
 import Profile from './pages/Profile';
 import ManageServices from './pages/ManageServices';
+import Notifications from './pages/Notifications';
+import AdminDashboard from './pages/AdminDashboard';
+
 
 const ProtectedRoute = ({ children, roleRequired }) => {
   const { user } = useAppContext();
@@ -49,6 +52,8 @@ function AppContent() {
       <Routes>
         <Route path="/" element={<Landing />} />
         <Route path="/login" element={<Login />} />
+        <Route path="/login-provider" element={<Login />} />
+
         <Route path="/signup" element={<Signup />} />
         
         {/* User Routes */}
@@ -136,6 +141,15 @@ function AppContent() {
             </ProtectedRoute>
           } 
         />
+        <Route 
+          path="/notifications" 
+          element={
+            <ProtectedRoute>
+              <Notifications />
+            </ProtectedRoute>
+          } 
+        />
+
         <Route 
           path="/profile" 
           element={

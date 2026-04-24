@@ -4,17 +4,23 @@ import Card from '../components/Card';
 import Button from '../components/Button';
 import Spinner from '../components/Spinner';
 import Alert from '../components/Alert';
-import { Calendar, User, MapPin } from 'lucide-react';
+import { API_BASE_URL } from '../api/config';
+
+import { Calendar, User, MapPin, MessageSquare } from 'lucide-react';
+import Chat from '../components/Chat';
+
 
 export default function ManageBookings() {
   const { token } = useAppContext();
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [activeChat, setActiveChat] = useState(null);
+
 
   const fetchBookings = async () => {
     try {
-      const response = await fetch('http://localhost:5000/api/bookings', {
+      const response = await fetch(`${API_BASE_URL}/api/bookings`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (!response.ok) throw new Error('Failed to fetch bookings');
@@ -37,17 +43,10 @@ export default function ManageBookings() {
        const reason = window.prompt("Please provide a reason for rejecting this booking:");
        if (reason === null) return; // Cancelled
        payload.reason = reason;
-    } else if (status === 'completed') {
-       const cost = window.prompt("Please enter the final service charge (e.g. 150.00):");
-       if (cost === null || cost.trim() === '' || isNaN(cost)) {
-           alert("Invalid service charge entered!");
-           return;
-       }
-       payload.cost = parseFloat(cost).toFixed(2);
     }
 
     try {
-      const response = await fetch(`http://localhost:5000/api/bookings/${id}`, {
+      const response = await fetch(`${API_BASE_URL}/api/bookings/${id}`, {
         method: 'PUT',
         headers: { 
           'Content-Type': 'application/json',
@@ -105,11 +104,17 @@ export default function ManageBookings() {
                     <p className="text-muted text-sm flex items-center gap-1" style={{ marginTop: '4px' }}>
                        <Calendar size={14}/> {new Date(b.date).toLocaleDateString()} at {b.time}
                     </p>
-                    {b.cost && (
-                      <p className="text-success text-sm flex items-center gap-1" style={{ marginTop: '4px', fontWeight: 'bold' }}>
-                         Service Charge: ₹{b.cost}
-                      </p>
-                    )}
+                    <div className="flex gap-2" style={{ marginTop: '8px' }}>
+                       <button 
+                         onClick={() => setActiveChat({ id: b.id, name: b.service_type })}
+                         className="text-primary hover:underline text-xs flex items-center gap-1"
+                         style={{ background: 'none', border: 'none', cursor: 'pointer' }}
+                       >
+                         <MessageSquare size={14} /> Message User
+                       </button>
+                    </div>
+
+
 
                   </div>
                   <div className="flex flex-col items-end gap-2">
@@ -130,12 +135,39 @@ export default function ManageBookings() {
                             <Button variant="secondary" size="sm" onClick={() => handleUpdateStatus(b.id, 'completed')}>Mark Completed</Button>
                         </div>
                     )}
+
+                    {(b.status === 'accepted' || b.status === 'completed') && (
+                        <div style={{ marginTop: '12px', borderTop: '1px solid #F1F5F9', paddingTop: '8px' }}>
+                           <p className="text-xs text-muted" style={{ marginBottom: '4px' }}>Service Documentation</p>
+                           <input 
+                             type="file" 
+                             id={`photo-${b.id}`} 
+                             style={{ display: 'none' }} 
+                             onChange={() => alert('Photo uploaded successfully! (Simulation)')}
+                           />
+                           <label 
+                             htmlFor={`photo-${b.id}`}
+                             className="text-primary hover:underline text-xs cursor-pointer flex items-center gap-1"
+                           >
+                             📷 Add Progress Photo
+                           </label>
+                        </div>
+                    )}
+
                   </div>
                </div>
             </Card>
           ))}
         </div>
       )}
+      {activeChat && (
+        <Chat 
+          bookingId={activeChat.id} 
+          bookingName={activeChat.name} 
+          onClose={() => setActiveChat(null)} 
+        />
+      )}
     </div>
   );
 }
+

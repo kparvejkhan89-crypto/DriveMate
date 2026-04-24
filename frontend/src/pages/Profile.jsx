@@ -5,6 +5,8 @@ import Input from '../components/Input';
 import Button from '../components/Button';
 import Spinner from '../components/Spinner';
 import Alert from '../components/Alert';
+import { API_BASE_URL } from '../api/config';
+
 import { User, MapPin, Store } from 'lucide-react';
 import { MapContainer, TileLayer, Marker, useMapEvents } from 'react-leaflet';
 import L from 'leaflet';
@@ -57,17 +59,17 @@ export default function Profile() {
   const [longitude, setLongitude] = useState(null);
   const [openingTime, setOpeningTime] = useState('09:00:00');
   const [closingTime, setClosingTime] = useState('18:00:00');
-  const [servicesOffered, setServicesOffered] = useState('');
+  const [closedDays, setClosedDays] = useState([]);
+
   const [garageRating, setGarageRating] = useState(4.0);
   const [garageCount, setGarageCount] = useState(1);
-  
   const [msg, setMsg] = useState({ type: '', text: '' });
 
   useEffect(() => {
     if (user?.role === 'provider') {
       const fetchProviderServices = async () => {
         try {
-          const res = await fetch("http://localhost:5000/api/provider-services", {
+          const res = await fetch(`${API_BASE_URL}/api/provider-services`, {
             headers: { 'Authorization': `Bearer ${token}` }
           });
           if (res.ok) {
@@ -79,7 +81,9 @@ export default function Profile() {
                 setLongitude(data.longitude || null);
                 setOpeningTime(data.opening_time || '09:00');
                 setClosingTime(data.closing_time || '18:00');
+                setClosedDays(data.closed_days ? data.closed_days.split(',') : []);
                 setGarageRating(data.rating ?? 0.0);
+
                 setGarageCount(data.rating_count ?? 0);
              }
           }
@@ -97,7 +101,7 @@ export default function Profile() {
   const handleUpdateUser = async () => {
     try {
       setMsg({ type: '', text: '' });
-      const res = await fetch("http://localhost:5000/auth/update-profile", {
+      const res = await fetch(`${API_BASE_URL}/auth/update-profile`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ id: user.id, name, email })
@@ -118,7 +122,7 @@ export default function Profile() {
   const handleUpdateGarage = async () => {
     try {
       setMsg({ type: '', text: '' });
-      const res = await fetch("http://localhost:5000/api/provider-services", {
+      const res = await fetch(`${API_BASE_URL}/api/provider-services`, {
         method: "PUT",
         headers: { 
           "Content-Type": "application/json",
@@ -130,8 +134,10 @@ export default function Profile() {
            latitude, 
            longitude,
            opening_time: openingTime, 
-           closing_time: closingTime
+           closing_time: closingTime,
+           closed_days: closedDays.join(',')
         })
+
       });
 
       const data = await res.json();
@@ -148,7 +154,7 @@ export default function Profile() {
     if (!confirmDelete) return;
 
     try {
-      const res = await fetch(`http://localhost:5000/auth/delete-profile/${user.id}`, {
+      const res = await fetch(`${API_BASE_URL}/auth/delete-profile/${user.id}`, {
         method: "DELETE"
       });
 
@@ -222,6 +228,26 @@ export default function Profile() {
                  <Input label="Closing Time" type="time" value={closingTime} onChange={(e) => setClosingTime(e.target.value)} />
                </div>
 
+               <div style={{ marginTop: '8px' }}>
+                  <p className="text-sm font-semibold" style={{ marginBottom: '8px' }}>Closed Days</p>
+                  <div className="flex gap-4 flex-wrap">
+                    {['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'].map(day => (
+                      <label key={day} className="flex items-center gap-2 cursor-pointer text-sm">
+                        <input 
+                          type="checkbox" 
+                          checked={closedDays.includes(day)} 
+                          onChange={(e) => {
+                            if (e.target.checked) setClosedDays([...closedDays, day]);
+                            else setClosedDays(closedDays.filter(d => d !== day));
+                          }}
+                        />
+                        {day}
+                      </label>
+                    ))}
+                  </div>
+               </div>
+
+
                <div style={{ marginTop: '16px' }}>
                   <p className="text-sm font-semibold" style={{ marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '4px' }}>
                     <MapPin size={16}/> Pinpoint Garage on Map
@@ -252,11 +278,6 @@ export default function Profile() {
                        📍 Updated Location Details: {Number(latitude).toFixed(4)}, {Number(longitude).toFixed(4)}
                     </p>
                   ) : null}
-               </div>
-
-               <div style={{ marginTop: '16px' }}>
-                 <h3 className="text-lg" style={{ marginTop: '16px', marginBottom: '16px' }}>Services Offered</h3>
-                 <Input label="Comma-separated services (e.g. Oil Change, Tuning)" placeholder="Enter services..." value={servicesOffered} onChange={e => setServicesOffered(e.target.value)} />
                </div>
 
                <div style={{ marginTop: '16px' }}>

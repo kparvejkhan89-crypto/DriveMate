@@ -3,18 +3,24 @@ import { useAppContext } from '../context/AppContext';
 import Card from '../components/Card';
 import Spinner from '../components/Spinner';
 import Alert from '../components/Alert';
-import { Calendar, Bell } from 'lucide-react';
+import { Calendar, Bell, MessageSquare, Navigation } from 'lucide-react';
+import Chat from '../components/Chat';
+
+import { API_BASE_URL } from '../api/config';
+
 
 export default function Reminders() {
   const { token } = useAppContext();
   const [reminders, setReminders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [activeChat, setActiveChat] = useState(null);
+
 
   useEffect(() => {
     const fetchBookings = async () => {
       try {
-        const response = await fetch('http://localhost:5000/api/bookings', {
+        const response = await fetch(`${API_BASE_URL}/api/bookings`, {
           headers: { 'Authorization': `Bearer ${token}` }
         });
         if (!response.ok) throw new Error('Failed to fetch bookings');
@@ -35,20 +41,9 @@ export default function Reminders() {
 
         setReminders(generatedReminders);
 
-        // Trigger OS notification
-        if (generatedReminders.length > 0) {
-          if ('Notification' in window) {
-            Notification.requestPermission().then(permission => {
-              if (permission === 'granted') {
-                new Notification('Upcoming Service Reminder', {
-                  body: `You have ${generatedReminders.length} upcoming service appointment(s)!`,
-                  icon: '/favicon.svg'
-                });
-              }
-            });
-          }
-        }
+        setReminders(generatedReminders);
       } catch (err) {
+
         setError(err.message);
       } finally {
         setLoading(false);
@@ -86,16 +81,26 @@ export default function Reminders() {
                     </h3>
                     <p className="text-muted text-sm">{r.description}</p>
                     {r.lat && r.lng && (
-                      <a 
-                        href={`https://www.google.com/maps/search/?api=1&query=${r.lat},${r.lng}`} 
-                        target="_blank" 
-                        rel="noopener noreferrer"
-                        className="hover:underline text-sm"
-                        style={{ display: 'inline-block', color: '#3B82F6', marginTop: '4px' }}
-                      >
-                        (Get Directions)
-                      </a>
+                        <div className="flex gap-3" style={{ marginTop: '12px' }}>
+                          <a 
+                            href={`https://www.google.com/maps/search/?api=1&query=${r.lat},${r.lng}`} 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className="btn btn-outline btn-sm flex items-center gap-1"
+                            style={{ padding: '6px 12px', fontSize: '0.8rem' }}
+                          >
+                            <Navigation size={14}/> Navigate Now
+                          </a>
+                          <button 
+                            onClick={() => setActiveChat({ id: r.id, name: r.title })}
+                            className="btn btn-primary btn-sm flex items-center gap-1"
+                            style={{ padding: '6px 12px', fontSize: '0.8rem' }}
+                          >
+                            <MessageSquare size={14}/> Message Garage
+                          </button>
+                        </div>
                     )}
+
                   </div>
                   <div>
                     <span className="text-warning flex items-center gap-1 font-semibold" style={{ fontSize: '0.9rem' }}>
@@ -107,6 +112,14 @@ export default function Reminders() {
           ))}
         </div>
       )}
+      {activeChat && (
+        <Chat 
+          bookingId={activeChat.id} 
+          bookingName={activeChat.name} 
+          onClose={() => setActiveChat(null)} 
+        />
+      )}
     </div>
   );
 }
+

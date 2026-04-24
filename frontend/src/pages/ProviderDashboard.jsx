@@ -4,6 +4,8 @@ import StatCard from '../components/StatCard';
 import Card from '../components/Card';
 import Spinner from '../components/Spinner';
 import Alert from '../components/Alert';
+import { API_BASE_URL } from '../api/config';
+
 import { Calendar, CheckCircle } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
@@ -16,7 +18,7 @@ export default function ProviderDashboard() {
   useEffect(() => {
     const fetchStats = async () => {
       try {
-        const response = await fetch('http://localhost:5000/api/stats', {
+        const response = await fetch(`${API_BASE_URL}/api/stats`, {
           headers: { 'Authorization': `Bearer ${token}` }
         });
         if (!response.ok) throw new Error('Failed to fetch dashboard data');

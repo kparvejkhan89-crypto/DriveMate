@@ -1,5 +1,18 @@
 const pool = require('../config/db');
 
+// --- NOTIFICATIONS HELPER ---
+const createNotification = async (userId, title, message) => {
+    try {
+        await pool.execute(
+            'INSERT INTO notifications (user_id, title, message) VALUES (?, ?, ?)',
+            [userId, title, message]
+        );
+    } catch (err) {
+        console.error('Error creating notification:', err);
+    }
+};
+
+
 // --- VEHICLES ---
 exports.getVehicles = async (req, res) => {
     try {
@@ -51,16 +64,17 @@ exports.updateProviderServices = async (req, res) => {
     try {
         if (req.user.role !== 'provider') return res.status(403).json({ error: 'Forbidden' });
         
-        const { name, address, latitude, longitude, opening_time, closing_time, services_offered } = req.body;
+        const { name, address, latitude, longitude, opening_time, closing_time, services_offered, closed_days } = req.body;
         
         // Ensure provider owns a service center
         const [centers] = await pool.execute('SELECT * FROM service_centers WHERE user_id = ?', [req.user.id]);
         if (centers.length === 0) return res.status(404).json({ error: 'Service center not found' });
         
         await pool.execute(
-            'UPDATE service_centers SET name = ?, address = ?, latitude = ?, longitude = ?, opening_time = ?, closing_time = ?, services_offered = ? WHERE user_id = ?',
-            [name || centers[0].name, address || centers[0].address, latitude || centers[0].latitude, longitude || centers[0].longitude, opening_time || centers[0].opening_time, closing_time || centers[0].closing_time, services_offered !== undefined ? services_offered : centers[0].services_offered, req.user.id]
+            'UPDATE service_centers SET name = ?, address = ?, latitude = ?, longitude = ?, opening_time = ?, closing_time = ?, services_offered = ?, closed_days = ? WHERE user_id = ?',
+            [name || centers[0].name, address || centers[0].address, latitude || centers[0].latitude, longitude || centers[0].longitude, opening_time || centers[0].opening_time, closing_time || centers[0].closing_time, services_offered !== undefined ? services_offered : centers[0].services_offered, closed_days !== undefined ? closed_days : centers[0].closed_days, req.user.id]
         );
+
         res.json({ message: 'Garage details updated successfully' });
     } catch (err) {
         console.error(err);
@@ -179,12 +193,18 @@ exports.addBooking = async (req, res) => {
             'INSERT INTO bookings (user_id, center_id, date, time, status, service_type) VALUES (?, ?, ?, ?, ?, ?)',
             [req.user.id, center_id, date, time, 'pending', service_type]
         );
+        const [centers] = await pool.execute('SELECT name, user_id FROM service_centers WHERE id = ?', [center_id]);
+        if (centers.length > 0) {
+            await createNotification(centers[0].user_id, 'New Booking Request', `A new booking request for ${service_type} has been received.`);
+        }
+
         res.status(201).json({ id: result.insertId, center_id, date, time, status: 'pending', service_type });
     } catch (err) {
         console.error(err);
         res.status(500).json({ error: 'Server error' });
     }
 };
+
 
 exports.updateBookingStatus = async (req, res) => {
     try {
@@ -212,6 +232,10 @@ exports.updateBookingStatus = async (req, res) => {
             }
             
             await pool.execute(query, params);
+            
+            // Send notification to user
+            await createNotification(booking.user_id, `Booking ${status}`, `Your booking for ${booking.service_type} at ${booking.center_name} has been ${status}.`);
+            
             res.json({ message: 'Status updated successfully', status });
         } else if (req.user.role === 'user') {
             if (status !== 'cancelled') return res.status(403).json({ error: 'Users can only cancel bookings' });
@@ -318,7 +342,95 @@ exports.getStats = async (req, res) => {
             });
         }
     } catch (err) {
-        console.error(err);
-        res.status(500).json({ error: 'Server error' });
+        console.error(err); res.status(500).json({ error: 'Server error' });
     }
 };
+
+// --- NOTIFICATIONS ---
+exports.getNotifications = async (req, res) => {
+    try {
+        const [rows] = await pool.execute('SELECT * FROM notifications WHERE user_id = ? ORDER BY created_at DESC', [req.user.id]);
+        res.json(rows);
+    } catch (err) {
+        console.error(err); res.status(500).json({ error: 'Server error' });
+    }
+};
+
+exports.markNotificationRead = async (req, res) => {
+    try {
+        await pool.execute('UPDATE notifications SET is_read = TRUE WHERE id = ? AND user_id = ?', [req.params.id, req.user.id]);
+        res.json({ message: 'Marked as read' });
+    } catch (err) {
+        console.error(err); res.status(500).json({ error: 'Server error' });
+    }
+};
+
+// --- CHAT ---
+exports.getMessages = async (req, res) => {
+    try {
+        const { bookingId } = req.params;
+        console.log(`Fetching messages for booking: ${bookingId}`);
+        const [rows] = await pool.query(`
+            SELECT m.*, u.name as sender_name 
+            FROM messages m 
+            LEFT JOIN users u ON m.sender_id = u.id 
+            WHERE m.booking_id = ? 
+            ORDER BY m.created_at ASC
+        `, [parseInt(bookingId)]);
+        console.log(`Found ${rows.length} messages`);
+        res.setHeader('Cache-Control', 'no-cache');
+        res.json(rows);
+
+    } catch (err) {
+        console.error(err); res.status(500).json({ error: 'Server error' });
+    }
+};
+
+exports.sendMessage = async (req, res) => {
+    try {
+        const { bookingId, message } = req.body;
+        await pool.execute(
+            'INSERT INTO messages (booking_id, sender_id, message) VALUES (?, ?, ?)',
+            [bookingId, req.user.id, message]
+        );
+        
+        // Notify the other party
+        const [booking] = await pool.execute(`
+            SELECT b.user_id, s.user_id as provider_id, b.service_type 
+            FROM bookings b 
+            JOIN service_centers s ON b.center_id = s.id 
+            WHERE b.id = ?
+        `, [bookingId]);
+        
+        if (booking.length > 0) {
+            const recipientId = req.user.id === booking[0].user_id ? booking[0].provider_id : booking[0].user_id;
+            await createNotification(recipientId, 'New Message', `You have a new message regarding booking for ${booking[0].service_type}.`);
+        }
+
+        res.status(201).json({ message: 'Sent' });
+    } catch (err) {
+        console.error(err); res.status(500).json({ error: 'Server error' });
+    }
+};
+
+// --- ADMIN ---
+exports.getAllUsers = async (req, res) => {
+    try {
+        if (req.user.role !== 'admin') return res.status(403).json({ error: 'Forbidden' });
+        const [rows] = await pool.execute('SELECT id, name, email, role, created_at FROM users');
+        res.json(rows);
+    } catch (err) {
+        console.error(err); res.status(500).json({ error: 'Server error' });
+    }
+};
+
+exports.getAllGarages = async (req, res) => {
+    try {
+        if (req.user.role !== 'admin') return res.status(403).json({ error: 'Forbidden' });
+        const [rows] = await pool.execute('SELECT * FROM service_centers');
+        res.json(rows);
+    } catch (err) {
+        console.error(err); res.status(500).json({ error: 'Server error' });
+    }
+};
+

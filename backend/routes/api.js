@@ -34,4 +34,14 @@ router.post('/expenses', apiController.addExpense);
 // Dashboard Stats
 router.get('/stats', apiController.getStats);
 
+// Notifications
+router.get('/notifications', apiController.getNotifications);
+router.put('/notifications/:id/read', apiController.markNotificationRead);
+
+// Chat
+router.get('/chat/:bookingId', apiController.getMessages);
+router.post('/chat', apiController.sendMessage);
+
+
 module.exports = router;
+

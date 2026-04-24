@@ -5,7 +5,7 @@ import { CarFront, Bell, User } from 'lucide-react';
 import './Navbar.css';
 
 export default function Navbar() {
-  const { user, logout } = useAppContext();
+  const { user, logout, notifications } = useAppContext();
   const navigate = useNavigate();
 
   const handleLogout = () => {
@@ -24,8 +24,15 @@ export default function Navbar() {
           {user ? (
             <>
               <span className="navbar-user">Hello, {user.name}</span>
-              <Bell size={20} className="text-muted cursor-pointer hover-text" />
-              <div className="navbar-profile cursor-pointer">
+              <Link to="/notifications" className="relative p-1 hover-text">
+                <Bell size={20} className="text-muted" />
+                {notifications.filter(n => !n.is_read).length > 0 && (
+                  <span style={{ position: 'absolute', top: 0, right: 0, backgroundColor: '#EF4444', color: 'white', fontSize: '10px', borderRadius: '50%', padding: '1px 5px', minWidth: '16px', textAlign: 'center' }}>
+                    {notifications.filter(n => !n.is_read).length}
+                  </span>
+                )}
+              </Link>
+              <div className="navbar-profile cursor-pointer" onClick={() => navigate('/profile')}>
                 <User size={20} />
               </div>
               <button className="btn btn-outline btn-sm" onClick={handleLogout}>Logout</button>

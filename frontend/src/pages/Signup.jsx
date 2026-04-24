@@ -6,6 +6,8 @@ import Button from '../components/Button';
 import Card from '../components/Card';
 import Alert from '../components/Alert';
 import { MapContainer, TileLayer, Marker, useMapEvents } from 'react-leaflet';
+import { API_BASE_URL } from '../api/config';
+
 import L from 'leaflet';
 import markerIcon2x from 'leaflet/dist/images/marker-icon-2x.png';
 import markerIcon from 'leaflet/dist/images/marker-icon.png';
@@ -105,7 +107,7 @@ export default function Signup() {
         garageDetails: role === 'provider' ? { name: garageName, address: garageAddress, latitude, longitude, opening_time: openingTime, closing_time: closingTime } : null
       };
 
-      const response = await fetch('http://localhost:5000/auth/signup', {
+      const response = await fetch(`${API_BASE_URL}/auth/signup`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),

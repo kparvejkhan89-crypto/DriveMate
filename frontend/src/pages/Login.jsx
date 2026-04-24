@@ -6,6 +6,8 @@ import Button from '../components/Button';
 import Card from '../components/Card';
 import Alert from '../components/Alert';
 import Spinner from '../components/Spinner';
+import { API_BASE_URL } from '../api/config';
+
 
 export default function Login() {
   const [email, setEmail] = useState('');
@@ -20,10 +22,11 @@ export default function Login() {
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     const roleParam = params.get('role');
-    if (roleParam === 'provider') {
+    if (roleParam === 'provider' || location.pathname.includes('login-provider')) {
       setRole('provider');
     }
   }, [location]);
+
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -36,11 +39,12 @@ export default function Login() {
 
     setLoading(true);
     try {
-      const response = await fetch('http://localhost:5000/auth/login', {
+      const response = await fetch(`${API_BASE_URL}/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ email, password, requiredRole: role }),
       });
+
 
       const data = await response.json();
       

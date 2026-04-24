@@ -6,6 +6,8 @@ import Input from '../components/Input';
 import Spinner from '../components/Spinner';
 import Alert from '../components/Alert';
 import { Wrench, Trash2 } from 'lucide-react';
+import { API_BASE_URL } from '../api/config';
+
 
 export default function ManageServices() {
   const { token } = useAppContext();
@@ -14,11 +16,10 @@ export default function ManageServices() {
   const [error, setError] = useState('');
   const [showAdd, setShowAdd] = useState(false);
   const [newServiceName, setNewServiceName] = useState('');
-  const [newServicePrice, setNewServicePrice] = useState('');
 
   const fetchServices = async () => {
     try {
-      const response = await fetch('http://localhost:5000/api/managed-services', {
+      const response = await fetch(`${API_BASE_URL}/api/managed-services`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (!response.ok) throw new Error('Failed to fetch services');
@@ -37,19 +38,19 @@ export default function ManageServices() {
 
   const handleAdd = async (e) => {
     e.preventDefault();
-    if (!newServiceName || !newServicePrice) {
-      setError('Please fill in both service name and price');
+    if (!newServiceName) {
+      setError('Please fill in service name');
       return;
     }
     
     try {
-      const response = await fetch('http://localhost:5000/api/managed-services', {
+      const response = await fetch(`${API_BASE_URL}/api/managed-services`, {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}` 
         },
-        body: JSON.stringify({ name: newServiceName, price: parseFloat(newServicePrice) })
+        body: JSON.stringify({ name: newServiceName })
       });
       
       const data = await response.json();
@@ -58,7 +59,6 @@ export default function ManageServices() {
       await fetchServices();
       setShowAdd(false);
       setNewServiceName('');
-      setNewServicePrice('');
     } catch (err) {
       setError(err.message);
     }
@@ -67,7 +67,7 @@ export default function ManageServices() {
   const handleDelete = async (id) => {
     if (!window.confirm('Are you sure you want to delete this service?')) return;
     try {
-      const response = await fetch(`http://localhost:5000/api/managed-services/${id}`, {
+      const response = await fetch(`${API_BASE_URL}/api/managed-services/${id}`, {
         method: 'DELETE',
         headers: { 'Authorization': `Bearer ${token}` }
       });
@@ -96,7 +96,6 @@ export default function ManageServices() {
           <h2 className="text-xl" style={{ marginBottom: '16px' }}>Add Service Offering</h2>
           <form className="grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }} onSubmit={handleAdd}>
              <Input label="Service Name" placeholder="e.g. Brake Replacement" value={newServiceName} onChange={e => setNewServiceName(e.target.value)} />
-             <Input label="Price (₹)" type="number" placeholder="2000" value={newServicePrice} onChange={e => setNewServicePrice(e.target.value)} />
             <div style={{ gridColumn: '1 / -1' }}>
                <Button type="submit">Add Service</Button>
             </div>
@@ -125,7 +124,7 @@ export default function ManageServices() {
                   </div>
                 </div>
                 <div className="flex items-center gap-4">
-                   <span className="text-primary font-bold">₹{s.price}</span>
+
                    <button 
                     onClick={() => handleDelete(s.id)}
                     style={{ color: '#EF4444', background: 'none', border: 'none', cursor: 'pointer', padding: '4px' }}

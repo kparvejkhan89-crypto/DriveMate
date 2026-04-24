@@ -5,6 +5,8 @@ import Button from '../components/Button';
 import Input from '../components/Input';
 import Spinner from '../components/Spinner';
 import Alert from '../components/Alert';
+import { API_BASE_URL } from '../api/config';
+
 import { IndianRupee, TrendingUp } from 'lucide-react';
 
 export default function Expenses() {
@@ -24,7 +26,7 @@ export default function Expenses() {
 
   const fetchExpenses = async () => {
     try {
-      const response = await fetch('http://localhost:5000/api/expenses', {
+      const response = await fetch(`${API_BASE_URL}/api/expenses`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (!response.ok) throw new Error('Failed to fetch expenses');
@@ -50,7 +52,7 @@ export default function Expenses() {
     }
     
     try {
-      const response = await fetch('http://localhost:5000/api/expenses', {
+      const response = await fetch(`${API_BASE_URL}/api/expenses`, {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
