@@ -381,8 +381,8 @@ exports.getStats = async (req, res) => {
             
             const centerId = myCenter[0].id;
             const [bookings] = await pool.execute('SELECT COUNT(*) as count FROM bookings WHERE center_id = ?', [centerId]);
-            const [pending] = await pool.execute('SELECT COUNT(*) as count FROM bookings WHERE center_id = ? AND status = "pending"', [centerId]);
-            const [earnings] = await pool.execute('SELECT SUM(cost) as total FROM bookings WHERE center_id = ? AND status = "completed"', [centerId]);
+            const [pending] = await pool.execute("SELECT COUNT(*) as count FROM bookings WHERE center_id = ? AND status = 'pending'", [centerId]);
+            const [earnings] = await pool.execute("SELECT SUM(cost) as total FROM bookings WHERE center_id = ? AND status = 'completed'", [centerId]);
             
             console.log(`Stats calculated: Bookings=${bookings[0].count}, Pending=${pending[0].count}, Earnings=${earnings[0].total}`);
             
