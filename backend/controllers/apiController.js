@@ -282,7 +282,52 @@ exports.rateBooking = async (req, res) => {
         await pool.execute('UPDATE service_centers SET rating = ?, rating_count = ? WHERE id = ?', [newRating.toFixed(1), newCount, booking.center_id]);
         await pool.execute('UPDATE bookings SET is_rated = TRUE, rating = ? WHERE id = ?', [ratingScore, id]);
         
+        await createNotification(center.user_id, 'New Rating Received', `A user has rated your service with ${ratingScore} stars.`);
+        
         res.json({ message: 'Rating submitted successfully!' });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Server error' });
+    }
+};
+
+// --- BOOKING PHOTOS ---
+exports.addBookingPhoto = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { photo_url, label } = req.body;
+        
+        const [bookings] = await pool.execute(
+            'SELECT b.* FROM bookings b JOIN service_centers s ON b.center_id = s.id WHERE b.id = ? AND s.user_id = ?',
+            [id, req.user.id]
+        );
+        if (bookings.length === 0) return res.status(403).json({ error: 'Access denied' });
+        
+        await pool.execute(
+            'INSERT INTO booking_photos (booking_id, photo_url, label) VALUES (?, ?, ?)',
+            [id, photo_url, label || 'progress']
+        );
+        
+        await createNotification(bookings[0].user_id, 'Photo Uploaded', `The provider has uploaded a photo for your booking: ${bookings[0].service_type}`);
+        
+        res.status(201).json({ message: 'Photo added successfully' });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Server error' });
+    }
+};
+
+exports.getBookingPhotos = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const [photos] = await pool.execute(`
+            SELECT p.* FROM booking_photos p 
+            JOIN bookings b ON p.booking_id = b.id 
+            JOIN service_centers s ON b.center_id = s.id
+            WHERE p.booking_id = ? AND (b.user_id = ? OR s.user_id = ?)
+        `, [id, req.user.id, req.user.id]);
+        
+        res.json(photos);
     } catch (err) {
         console.error(err);
         res.status(500).json({ error: 'Server error' });
@@ -329,7 +374,7 @@ exports.getStats = async (req, res) => {
             });
         } else {
             const [myCenter] = await pool.execute('SELECT id FROM service_centers WHERE user_id = ?', [req.user.id]);
-            if (myCenter.length === 0) return res.json({ bookingsCount: 0, pendingCount: 0 });
+            if (myCenter.length === 0) return res.json({ bookingsCount: 0, pendingCount: 0, totalEarnings: 0 });
             
             const centerId = myCenter[0].id;
             const [bookings] = await pool.execute('SELECT COUNT(*) as count FROM bookings WHERE center_id = ?', [centerId]);

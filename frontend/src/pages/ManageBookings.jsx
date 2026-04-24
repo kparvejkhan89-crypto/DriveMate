@@ -139,18 +139,28 @@ export default function ManageBookings() {
                     {(b.status === 'accepted' || b.status === 'completed') && (
                         <div style={{ marginTop: '12px', borderTop: '1px solid #F1F5F9', paddingTop: '8px' }}>
                            <p className="text-xs text-muted" style={{ marginBottom: '4px' }}>Service Documentation</p>
-                           <input 
-                             type="file" 
-                             id={`photo-${b.id}`} 
-                             style={{ display: 'none' }} 
-                             onChange={() => alert('Photo uploaded successfully! (Simulation)')}
-                           />
-                           <label 
-                             htmlFor={`photo-${b.id}`}
-                             className="text-primary hover:underline text-xs cursor-pointer flex items-center gap-1"
+                           <Button 
+                             variant="outline" 
+                             size="sm" 
+                             onClick={async () => {
+                               const url = window.prompt("Enter Photo URL (Simulation):");
+                               if (!url) return;
+                               try {
+                                 const res = await fetch(`${API_BASE_URL}/api/bookings/${b.id}/photos`, {
+                                   method: 'POST',
+                                   headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                                   body: JSON.stringify({ photo_url: url, label: b.status === 'completed' ? 'after' : 'before' })
+                                 });
+                                 if (res.ok) alert('Photo saved successfully!');
+                                 else alert('Failed to save photo');
+                               } catch (err) {
+                                 console.error(err);
+                               }
+                             }}
+                             style={{ fontSize: '0.75rem', padding: '4px 8px' }}
                            >
                              📷 Add Progress Photo
-                           </label>
+                           </Button>
                         </div>
                     )}
 

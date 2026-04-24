@@ -21,6 +21,37 @@ L.Icon.Default.mergeOptions({
   shadowUrl: markerShadow,
 });
 
+const BookingPhotos = ({ bookingId, token }) => {
+  const [photos, setPhotos] = useState([]);
+  
+  useEffect(() => {
+    fetch(`${API_BASE_URL}/api/bookings/${bookingId}/photos`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    })
+    .then(res => res.json())
+    .then(data => setPhotos(data))
+    .catch(err => console.error(err));
+  }, [bookingId, token]);
+
+  if (photos.length === 0) return null;
+
+  return (
+    <div style={{ marginTop: '12px', display: 'flex', gap: '8px', overflowX: 'auto', paddingBottom: '8px' }}>
+      {photos.map(p => (
+        <div key={p.id} style={{ flexShrink: 0, textAlign: 'center' }}>
+          <img 
+            src={p.photo_url} 
+            alt={p.label} 
+            style={{ width: '60px', height: '60px', objectFit: 'cover', borderRadius: '4px', border: '1px solid #E2E8F0' }}
+            onError={(e) => { e.target.src = 'https://via.placeholder.com/60?text=Photo'; }}
+          />
+          <p style={{ fontSize: '10px', color: '#64748B', textTransform: 'capitalize', marginTop: '2px' }}>{p.label}</p>
+        </div>
+      ))}
+    </div>
+  );
+};
+
 export default function Services() {
   const { token } = useAppContext();
   const [centers, setCenters] = useState([]);
@@ -312,6 +343,7 @@ export default function Services() {
                       <p className="text-muted text-sm flex items-center gap-1" style={{ marginTop: '4px' }}>
                          <Calendar size={14}/> {new Date(b.date).toLocaleDateString()} at {b.time}
                       </p>
+                      <BookingPhotos bookingId={b.id} token={token} />
                     </div>
                     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '8px' }}>
                       <span style={{ padding: '6px 12px', borderRadius: '16px', backgroundColor: '#F8FAFC', border: '1px solid #E2E8F0', fontSize: '0.875rem', textTransform: 'capitalize' }} className={getStatusColor(b.status)}>

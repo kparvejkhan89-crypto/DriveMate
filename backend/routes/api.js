@@ -26,6 +26,8 @@ router.get('/bookings', apiController.getBookings);
 router.post('/bookings', apiController.addBooking);
 router.put('/bookings/:id', apiController.updateBookingStatus);
 router.post('/bookings/:id/rate', apiController.rateBooking);
+router.post('/bookings/:id/photos', apiController.addBookingPhoto);
+router.get('/bookings/:id/photos', apiController.getBookingPhotos);
 
 // Expenses
 router.get('/expenses', apiController.getExpenses);
